@@ -53,17 +53,12 @@ function updatePoolDisplays() {
   let totalSpentSkills = 0;
   
   skills.forEach(skill => {
-    let val = skill.value || 1; // Базовое значение мастерства (минимум 1)
+    let val = skill.value || 1; // Текущий уровень (минимум 1)
     
-    // Если уровень мастерства выше 1, считаем цену накопленных уровней
-    // Формула: уровень 2 стоит 2 очка, уровень 3 стоит еще 3 очка и т.д.
-    if (val > 1) {
-      for (let i = 2; i <= val; i++) {
-        totalSpentSkills += i;
-      }
-    }
+    // Чистая стоимость уровня по формуле n*(n+1)/2
+    totalSpentSkills += (val * (val + 1)) / 2;
     
-    // Добавляем малые плюсы, которые влиты в текущий уровень
+    // Добавляем малые плюсы, которые влиты СВЕРХ текущего уровня
     totalSpentSkills += (skill.smallBonuses || 0);
   });
 
@@ -101,11 +96,7 @@ function canAddSkillBonus() {
   
   skills.forEach(skill => {
     let val = skill.value || 1;
-    if (val > 1) {
-      for (let i = 2; i <= val; i++) {
-        totalSpent += i;
-      }
-    }
+    totalSpent += (val * (val + 1)) / 2;
     totalSpent += (skill.smallBonuses || 0);
   });
   
