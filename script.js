@@ -19,14 +19,25 @@ function updatePoolDisplays() {
   for (let key in character) {
     let val = character[key] || 0;
     
-    // Считаем, сколько малых плюсов нужно было вложить, чтобы поднять характеристику до текущего уровня val от 0
     if (val > 0) {
-      // Сумма арифметической прогрессии: для уровня N нужно 1 + 2 + ... + N очков
+      // Положительная характеристика: тратит очки из пула
       totalSpentStats += (val * (val + 1)) / 2;
+      // Каждый накопленный плюс приближает к еще большему значению (тратит очки)
+      totalSpentStats += (smallBonuses[key] || 0);
+    } 
+    else if (val < 0) {
+      // Отрицательная характеристика: ВОЗВРАЩАЕТ очки в пул ГМа (ценой дебаффа)
+      let absVal = Math.abs(val);
+      totalSpentStats -= (absVal * (absVal + 1)) / 2;
+      
+      // Малые плюсы в минусовой зоне двигают характеристику обратно к НУЛЮ.
+      // То есть они уменьшают штраф и "выкупают" её обратно (тратят очки пула)
+      totalSpentStats += (smallBonuses[key] || 0);
     }
-    
-    // Добавляем текущие плюсики, которые висят на этой характеристике прямо сейчас
-    totalSpentStats += (smallBonuses[key] || 0);
+    else {
+      // Если характеристика равна 0, просто учитываем малые плюсы на ней (они тратят очки)
+      totalSpentStats += (smallBonuses[key] || 0);
+    }
   }
   
   let maxStats = Number(document.getElementById("gmStatPoolInput").value) || 0;
@@ -38,14 +49,13 @@ function updatePoolDisplays() {
     statLeftSpan.style.color = statsLeft < 0 ? "#ff5555" : (statsLeft === 0 ? "#aaa" : "#88ff88");
   }
 
-  // --- 2. СЧИТАЕМ ПЛЮСЫ МАСТЕРСТВ ---
+  // --- 2. СЧИТАЕМ ПЛЮСЫ МАСТЕРСТВ (остаются как были) ---
   let totalSpentSkills = 0;
   skills.forEach(skill => {
     let val = skill.value || 1;
-    // Мастерство начинается с 1. Чтобы поднять до val, нужно накопить плюсы для уровней от 1 до val-1
     if (val > 1) {
       for (let i = 1; i < val; i++) {
-        totalSpentSkills += (i + 1); // Порог для перехода на следующий уровень
+        totalSpentSkills += (i + 1);
       }
     }
     totalSpentSkills += (skill.smallBonuses || 0);
@@ -65,8 +75,16 @@ function canAddStatBonus() {
   let totalSpent = 0;
   for (let key in character) {
     let val = character[key] || 0;
-    if (val > 0) totalSpent += (val * (val + 1)) / 2;
-    totalSpent += (smallBonuses[key] || 0);
+    if (val > 0) {
+      totalSpent += (val * (val + 1)) / 2;
+      totalSpent += (smallBonuses[key] || 0);
+    } else if (val < 0) {
+      let absVal = Math.abs(val);
+      totalSpent -= (absVal * (absVal + 1)) / 2;
+      totalSpent += (smallBonuses[key] || 0);
+    } else {
+      totalSpent += (smallBonuses[key] || 0);
+    }
   }
   let max = Number(document.getElementById("gmStatPoolInput").value) || 0;
   return totalSpent < max;
@@ -159,6 +177,7 @@ function removeSmallBonus(stat) {
     character[stat]--;
     let newVal = character[stat];
     let needForNewLevel = newVal >= 0 ? (newVal + 1) : Math.abs(newVal);
+    
     smallBonuses[stat] = needForNewLevel - 1;
 
     let input = document.getElementById(statIds[stat]);
@@ -169,7 +188,7 @@ function removeSmallBonus(stat) {
   updateDerivedStats();
   displayDerivedStats();
   updateSmallBonusDisplay();
-  updatePoolDisplays(); // <-- ДОБАВИЛИ СЮДА ОБНОВЛЕНИЕ ПУЛА ГМА!
+  updatePoolDisplays(); // <-- ВОТ ЭТОТ ВЫЗОВ ОБЯЗАТЕЛЬНО НУЖЕН ЗДЕСЬ!
 }
 
 let derived = {
@@ -189,11 +208,11 @@ function saveStats() {
       let newValue = Number(input.value) || 0;
       character[stat] = newValue;
 
-      // Корректный перерасчет порога при ручном вводе
+      // Корректный перерасчет порога с учетом знака характеристики
       let newNeed = newValue >= 0 ? (newValue + 1) : Math.abs(newValue);
 
       // Если малые бонусы вылетели за пределы нового порога, сбрасываем их
-      if (smallBonuses[stat] >= newNeed) {
+      if ((smallBonuses[stat] || 0) >= newNeed) {
         smallBonuses[stat] = 0; 
       }
     }
@@ -203,7 +222,7 @@ function saveStats() {
   updateDerivedStats();
   displayDerivedStats();
   updateSmallBonusDisplay();
-  updatePoolDisplays();
+  updatePoolDisplays(); // Пересчитываем пул после ручного ввода
 }
 
 function loadSmallBonuses() {
