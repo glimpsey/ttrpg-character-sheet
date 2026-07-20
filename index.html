@@ -1,0 +1,162 @@
+<div class="app">
+
+<h1>Лист персонажа</h1>
+  
+<!-- Панель распределения очков от ГМа -->
+<div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+  <h3 style="color: #fce1d4; margin-top: 0; margin-bottom: 12px; font-size: 1.1em;"> Распределение малых плюсов (GM панель)</h3>
+  <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+    
+    <!-- Пул для Характеристик -->
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="color: #fff; font-size: 0.9em;">Очки Характеристик:</span>
+      <input type="number" id="gmStatPoolInput" value="0" min="0" oninput="updatePoolDisplays()" style="width: 60px; background: #221a15; border: 1px solid #fce1d4; color: #fff; padding: 3px; border-radius: 4px; font-family: monospace; text-align: center;">
+      <span style="font-family: monospace; font-weight: bold;">(Осталось: <span id="gmStatPoolLeft">0</span>)</span>
+    </div>
+
+    <!-- Пул для Мастерств -->
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="color: #fff; font-size: 0.9em;">Очки Мастерств:</span>
+      <input type="number" id="gmSkillPoolInput" value="0" min="0" oninput="updatePoolDisplays()" style="width: 60px; background: #221a15; border: 1px solid #fce1d4; color: #fff; padding: 3px; border-radius: 4px; font-family: monospace; text-align: center;">
+      <span style="font-family: monospace; font-weight: bold;">(Осталось: <span id="gmSkillPoolLeft">0</span>)</span>
+    </div>
+
+  </div>
+</div>
+  
+<!-- Возвращаем горизонтальное расположение карточек, но добавляем gap, чтобы они не слипались -->
+<div class="top-panel" style="display: flex; flex-direction: row; align-items: flex-start; gap: 40px; margin-bottom: 25px;">
+
+  <!-- Левая колонка: Основные характеристики -->
+  <div class="stats-panel" style="flex: 0 0 auto;">
+    <div class="character">
+      <h2>Характеристики</h2>
+      
+      <!-- Сюда JavaScript выводит строчки -->
+      <div id="mainStatsContainer"></div>
+      
+    </div>
+  </div>
+
+  <!-- Правая колонка: Производные характеристики -->
+  <div class="derived-panel" style="flex: 0 0 auto; padding-top: 10px;">
+    <h2>Производные характеристики</h2>
+    <div id="derivedStats" style="line-height: 1.6;"></div>
+  </div>
+
+</div>
+
+
+    <div class="card">
+ 
+
+<h2>Мастерства</h2>
+    
+    <div id="skillList"></div>
+
+<input
+id="skillName"
+type="text"
+placeholder="Название мастерства"
+       style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #444; background-color: #222; color: #fff; box-sizing: border-box;">
+
+<input
+id="skillValue"
+type="number"
+value="0"
+       style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #444; background-color: #222; color: #fff; box-sizing: border-box;">
+
+<button onclick="addSkill()">
+Добавить мастерство
+</button>
+
+</div>
+  
+  <button onclick="resetAllData()" style="margin-bottom: 20px; padding: 8px 12px; border-radius: 6px; border: 1px solid #555; background-color: #333; color: #ff8888; cursor: pointer; font-weight: medium; width: 100%;">
+  Сбросить все данные персонажа
+</button>
+  
+<hr>
+  
+  <div class="card">
+
+<h2>Бросок</h2>
+
+<select id="statSelect">
+
+<option value="0">
+Без модификатора
+</option>
+
+<option value="Мощь тела">
+Мощь тела
+</option>
+
+<option value="Контроль движений">
+Контроль движений
+</option>
+
+<option value="Скорость реакции">
+Скорость реакции
+</option>
+  
+<option value="Острота чувств">
+Острота чувств
+</option>
+  
+  <option value="Запас сил">
+Запас сил
+</option>
+  
+<option value="Искусность рук">
+Искусность рук
+</option>
+  
+<option value="Духовная стойкость">
+Духовная стойость
+</option>
+  
+<option value="Глубина разума">
+Глубина разума
+</option>
+  
+<option value="Поиск деталей">
+Поиск деталей
+</option>
+  
+<option value="Влияние личности">
+Влияние личности
+</option>
+  
+<option value="Жизненный опыт">
+Жизненный опыт
+</option>
+
+</select>
+
+<select id="skillSelect"></select>
+
+</div>
+ 
+
+<div class="card">
+  
+  <h3>Силы</h3>
+  
+<input 
+id="extraDice" 
+type="number" 
+value="0"
+min="0">
+  
+  </div>
+
+<button onclick="rollDice()">
+Roll dice
+</button>
+
+
+
+<div id="result">
+Результат
+</div>
