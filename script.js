@@ -49,15 +49,21 @@ function updatePoolDisplays() {
     statLeftSpan.style.color = statsLeft < 0 ? "#ff5555" : (statsLeft === 0 ? "#aaa" : "#88ff88");
   }
 
-  // --- 2. СЧИТАЕМ ПЛЮСЫ МАСТЕРСТВ (остаются как были) ---
+// --- 2. СЧИТАЕМ ПЛЮСЫ МАСТЕРСТВ ---
   let totalSpentSkills = 0;
+  
   skills.forEach(skill => {
-    let val = skill.value || 1;
+    let val = skill.value || 1; // Базовое значение мастерства (минимум 1)
+    
+    // Если уровень мастерства выше 1, считаем цену накопленных уровней
+    // Формула: уровень 2 стоит 2 очка, уровень 3 стоит еще 3 очка и т.д.
     if (val > 1) {
-      for (let i = 1; i < val; i++) {
-        totalSpentSkills += (i + 1);
+      for (let i = 2; i <= val; i++) {
+        totalSpentSkills += i;
       }
     }
+    
+    // Добавляем малые плюсы, которые влиты в текущий уровень
     totalSpentSkills += (skill.smallBonuses || 0);
   });
 
@@ -92,7 +98,17 @@ function canAddStatBonus() {
 
 function canAddSkillBonus() {
   let totalSpent = 0;
-  skills.forEach(skill => totalSpent += (skill.smallBonuses || 0));
+  
+  skills.forEach(skill => {
+    let val = skill.value || 1;
+    if (val > 1) {
+      for (let i = 2; i <= val; i++) {
+        totalSpent += i;
+      }
+    }
+    totalSpent += (skill.smallBonuses || 0);
+  });
+  
   let max = Number(document.getElementById("gmSkillPoolInput").value) || 0;
   return totalSpent < max;
 }
@@ -329,6 +345,7 @@ function displayDerivedStats() {
         <button onclick="changeDerivedValue('health', 1)" style="cursor: pointer; border: none; background: transparent; color: #88ff88; font-size: 0.8em; padding: 2px 4px;">➕</button>
       </div>
     </div>
+
     <!-- Такты -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
       <span style="color: #fce1d4; font-weight: bold;">Такты:</span>
@@ -338,6 +355,7 @@ function displayDerivedStats() {
         <button onclick="changeDerivedValue('clockcyckles', 1)" style="cursor: pointer; border: none; background: transparent; color: #88ff88; font-size: 0.8em; padding: 2px 4px;">➕</button>
       </div>
     </div>
+
     <!-- Силы -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
       <span style="color: #fce1d4; font-weight: bold;">Силы:</span>
@@ -347,6 +365,7 @@ function displayDerivedStats() {
         <button onclick="changeDerivedValue('forces', 1)" style="cursor: pointer; border: none; background: transparent; color: #88ff88; font-size: 0.8em; padding: 2px 4px;">➕</button>
       </div>
     </div>
+
     <!-- Перемещение -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
       <span style="color: #fce1d4; font-weight: bold;">Перемещение:</span>
@@ -380,18 +399,19 @@ function addSkill() {
     return;
   }
 
-  // Присваиваем базовое значение 1, если ввели меньше, и добавляем счетчик малых бонусов
   if (value < 1) value = 1;
 
   skills.push({ 
     name: name, 
     value: value, 
-    smallBonuses: 0 // Инициализируем малые бонусы для нового мастерства
+    smallBonuses: 0 
   });
   
   localStorage.setItem("skills", JSON.stringify(skills));
 
   updateSkillList();
+  updatePoolDisplays(); // Добавь эту строчку, чтобы пул ГМа обновлялся при создании навыка!
+  
   document.getElementById("skillName").value = "";
   document.getElementById("skillValue").value = 0;
 }
@@ -421,27 +441,26 @@ function addSkillSmallBonus(index) {
   updatePoolDisplays(); // Пересчитываем остаток очков ГМа
 }
 
-function removeSkillSmallBonus(index) {
-  let skill = skills[index];
+function removeSkillSmallBonus(skillIndex) {
+  let skill = skills[skillIndex];
   
-  if (skill.smallBonuses === undefined) skill.smallBonuses = 0;
-
-  if (skill.smallBonuses > 0) {
+  if ((skill.smallBonuses || 0) > 0) {
     skill.smallBonuses--;
   } else {
-    // Если малых бонусов 0, мы падаем на уровень вниз, но не ниже 1
+    // Если малых бонусов 0, уменьшаем сам уровень мастерства
     if (skill.value > 1) {
       skill.value--;
-      let newVal = skill.value;
-      let needForNewLevel = newVal + 1;
-      
-      // Шкала становится "почти заполненной" для возврата наверх
+      // Новый порог для малых бонусов равен текущему (уменьшенному) уровню + 1
+      let needForNewLevel = skill.value + 1;
       skill.smallBonuses = needForNewLevel - 1;
     }
   }
 
+  // ВАЖНО: сохраняем именно мастерства, так как saveToLocalStorage их не трогает
   localStorage.setItem("skills", JSON.stringify(skills));
-  updateSkillList();
+  
+  updateSkillList();     // Перерисовываем интерфейс мастерств
+  updatePoolDisplays(); // Пересчитываем пулы очков ГМа
 }
 
 function deleteSkill(index) {
@@ -485,6 +504,7 @@ function updateSkillList() {
             <button onclick="addSkillSmallBonus(${index})" 
                     style="cursor: pointer; border: none; background: transparent; color: #fce1d4; font-size: 0.8em; padding: 2px 6px;">➕</button>
           </div>
+
           <!-- Кнопка полного удаления мастерства -->
           <button onclick="deleteSkill(${index})" style="cursor: pointer; border: none; background: transparent; color: #ff8888; font-size: 0.9em; padding: 2px 4px;">❌</button>
         </div>
