@@ -73,35 +73,11 @@ function updatePoolDisplays() {
 }
 
 function canAddStatBonus() {
-  let totalSpent = 0;
-  for (let key in character) {
-    let val = character[key] || 0;
-    if (val > 0) {
-      totalSpent += (val * (val + 1)) / 2;
-      totalSpent += (smallBonuses[key] || 0);
-    } else if (val < 0) {
-      let absVal = Math.abs(val);
-      totalSpent -= (absVal * (absVal + 1)) / 2;
-      totalSpent += (smallBonuses[key] || 0);
-    } else {
-      totalSpent += (smallBonuses[key] || 0);
-    }
-  }
-  let max = Number(document.getElementById("gmStatPoolInput").value) || 0;
-  return totalSpent < max;
+  return true; // Блокировка отключена, можно добавлять всегда
 }
 
 function canAddSkillBonus() {
-  let totalSpent = 0;
-  
-  skills.forEach(skill => {
-    let val = skill.value || 1;
-    totalSpent += (val * (val + 1)) / 2;
-    totalSpent += (skill.smallBonuses || 0);
-  });
-  
-  let max = Number(document.getElementById("gmSkillPoolInput").value) || 0;
-  return totalSpent < max;
+  return true; // Блокировка отключена, можно добавлять всегда
 }
 
 let smallBonuses = {
@@ -147,14 +123,8 @@ function saveToLocalStorage() {
 }
 
 function addSmallBonus(statName) {
-  // Проверяем динамический лимит очков
-  if (!canAddStatBonus()) {
-    alert("Все доступные очки характеристик уже распределены!");
-    return;
-  }
-
   let val = Number(character[statName]) || 0;
-  let need = val === 0 ? 1 : val;
+  let need = val === 0 ? 1 : (val > 0 ? val + 1 : Math.abs(val));
 
   if (smallBonuses[statName] === undefined) smallBonuses[statName] = 0;
 
@@ -172,7 +142,7 @@ function addSmallBonus(statName) {
   updateDerivedStats();
   displayDerivedStats();
   updateSmallBonusDisplay();
-  updatePoolDisplays(); // Пересчитываем остаток очков ГМа
+  updatePoolDisplays(); // Пул просто пересчитает цифру на экране
 }
 
 function removeSmallBonus(stat) {
@@ -408,12 +378,6 @@ function addSkill() {
 }
 
 function addSkillSmallBonus(index) {
-  // Проверяем динамический лимит очков
-  if (!canAddSkillBonus()) {
-    alert("Все доступные очки мастерств уже распределены!");
-    return;
-  }
-
   let skill = skills[index];
   let val = skill.value;
   let need = val + 1;
@@ -429,7 +393,7 @@ function addSkillSmallBonus(index) {
 
   localStorage.setItem("skills", JSON.stringify(skills));
   updateSkillList();
-  updatePoolDisplays(); // Пересчитываем остаток очков ГМа
+  updatePoolDisplays(); // Пул просто пересчитает цифру на экране
 }
 
 function removeSkillSmallBonus(skillIndex) {
@@ -460,6 +424,17 @@ function deleteSkill(index) {
   updateSkillList();
 }
 
+function toggleGmPanel() {
+  let panel = document.getElementById("gmPointBuyPanel");
+  if (panel) {
+    // Если сейчас панель скрыта — показываем, если видна — скрываем
+    if (panel.style.display === "none") {
+      panel.style.display = "block";
+    } else {
+      panel.style.display = "none";
+    }
+  }
+}
 function changeSkill(index, amount) {
   skills[index].value += amount;
   if (skills[index].value < 1) {
