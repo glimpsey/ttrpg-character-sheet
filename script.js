@@ -636,7 +636,7 @@ function rollDice() {
     extraOutput += `d${sides}: ${roll} (${converted})<br>`;
   });
 
-  // Вывод результата броска на экран
+ // Вывод результата броска на экран
   document.getElementById("result").innerHTML = `
     <b>Характеристика:</b> ${stat === "0" ? "Без модификатора" : stat} (${statValue >= 0 ? "+" : ""}${statValue})
     <br><br>
@@ -650,7 +650,8 @@ function rollDice() {
     <hr>
     <b>Вложено Сил:</b> ${forcesSpent}
     <br><br>
-    Результат броска Сил (d${forcesSpent === 0 ? "0" : diceToRoll.join("/d")}):<br>${extraOutput.trim() || "нет кубов"}
+    Результат броска Сил (d${forcesSpent === 0 ? "0" : diceToRoll.join("/d")}):<br>
+    ${extraOutput.trim() || "нет кубов"}<br>
     Сумма кубов Сил: ${extraTotal}
     <hr>
     🎲 Итог: <b>${total}</b>
