@@ -302,17 +302,35 @@ function displayDerivedStats() {
       <div style="display: flex; align-items: center; background: rgba(255, 255, 255, 0.08); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1); gap: 4px; min-width: 95px; justify-content: space-between; white-space: nowrap;">
         <button onclick="changeDerivedValue('health', -1)" style="cursor: pointer; border: none; background: transparent; color: #ff8888; font-size: 0.8em; padding: 2px 4px;">➖</button>
         <!-- Меняем цвет здесь с помощью переменной hpColor -->
-        <span style="font-family: monospace; color: ${hpColor}; text-align: center; font-size: 0.9em; flex: 1; font-weight: regular;">${derived.healthCurrent}/${derived.healthMax}</span>
+        <div style="display:flex; align-items:center; flex:1; justify-content:center; gap:2px;">
+  <input
+    type="number"
+    value="${derived.healthCurrent}"
+    min="0"
+    max="${derived.healthMax}"
+    onchange="setDerivedValue('health', this.value)"
+    style="width:42px; text-align:center; background:#222; color:${hpColor}; border:1px solid #444; border-radius:4px;">
+  <span style="color:#fff;">/${derived.healthMax}</span>
+</div>
         <button onclick="changeDerivedValue('health', 1)" style="cursor: pointer; border: none; background: transparent; color: #88ff88; font-size: 0.8em; padding: 2px 4px;">➕</button>
       </div>
     </div>
 
-    <!-- Такты -->
+<!-- Такты -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
       <span style="color: #fce1d4; font-weight: bold;">Такты:</span>
       <div style="display: flex; align-items: center; background: rgba(255, 255, 255, 0.08); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1); gap: 4px; min-width: 95px; justify-content: space-between; white-space: nowrap;">
         <button onclick="changeDerivedValue('clockcyckles', -1)" style="cursor: pointer; border: none; background: transparent; color: #ff8888; font-size: 0.8em; padding: 2px 4px;">➖</button>
-        <span style="font-family: monospace; color: #fff; text-align: center; font-size: 0.9em; flex: 1;">${derived.clockcycklesCurrent}/${derived.clockcycklesMax}</span>
+        <div style="display:flex; align-items:center; flex:1; justify-content:center; gap:2px;">
+          <input
+            type="number"
+            value="${derived.clockcycklesCurrent}"
+            min="0"
+            max="${derived.clockcycklesMax}"
+            onchange="setDerivedValue('clockcyckles', this.value)"
+            style="width:42px; text-align:center; background:#222; color:#fff; border:1px solid #444; border-radius:4px;">
+          <span style="color: #fff;">/${derived.clockcycklesMax}</span>
+        </div>
         <button onclick="changeDerivedValue('clockcyckles', 1)" style="cursor: pointer; border: none; background: transparent; color: #88ff88; font-size: 0.8em; padding: 2px 4px;">➕</button>
       </div>
     </div>
@@ -322,7 +340,16 @@ function displayDerivedStats() {
       <span style="color: #fce1d4; font-weight: bold;">Силы:</span>
       <div style="display: flex; align-items: center; background: rgba(255, 255, 255, 0.08); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1); gap: 4px; min-width: 95px; justify-content: space-between; white-space: nowrap;">
         <button onclick="changeDerivedValue('forces', -1)" style="cursor: pointer; border: none; background: transparent; color: #ff8888; font-size: 0.8em; padding: 2px 4px;">➖</button>
-        <span style="font-family: monospace; color: #fff; text-align: center; font-size: 0.9em; flex: 1;">${derived.forcesCurrent}/${derived.forcesMax}</span>
+        <div style="display:flex; align-items:center; flex:1; justify-content:center; gap:2px;">
+          <input
+            type="number"
+            value="${derived.forcesCurrent}"
+            min="0"
+            max="${derived.forcesMax}"
+            onchange="setDerivedValue('forces', this.value)"
+            style="width:42px; text-align:center; background:#222; color:#fff; border:1px solid #444; border-radius:4px;">
+          <span style="color: #fff;">/${derived.forcesMax}</span>
+        </div>
         <button onclick="changeDerivedValue('forces', 1)" style="cursor: pointer; border: none; background: transparent; color: #88ff88; font-size: 0.8em; padding: 2px 4px;">➕</button>
       </div>
     </div>
@@ -333,6 +360,23 @@ function displayDerivedStats() {
       <b style="color: #fff; font-family: monospace; min-width: 95px; text-align: center; padding-right: 14px; box-sizing: border-box; font-size: 1em;">${derived.moving}</b>
     </div>
   `;
+}
+
+function setDerivedValue(statType, value) {
+  value = Number(value) || 0;
+
+  if (statType === "health") {
+    derived.healthCurrent = Math.max(0, Math.min(value, derived.healthMax));
+  }
+  else if (statType === "clockcyckles") {
+    derived.clockcycklesCurrent = Math.max(0, Math.min(value, derived.clockcycklesMax));
+  }
+  else if (statType === "forces") {
+    derived.forcesCurrent = Math.max(0, Math.min(value, derived.forcesMax));
+  }
+
+  localStorage.setItem("derivedStatsState", JSON.stringify(derived));
+  displayDerivedStats();
 }
 
 function changeDerivedValue(statType, amount) {
@@ -636,7 +680,7 @@ function rollDice() {
     extraOutput += `d${sides}: ${roll} (${converted})<br>`;
   });
 
- // Вывод результата броска на экран
+// Вывод результата броска на экран
   document.getElementById("result").innerHTML = `
     <b>Характеристика:</b> ${stat === "0" ? "Без модификатора" : stat} (${statValue >= 0 ? "+" : ""}${statValue})
     <br><br>
