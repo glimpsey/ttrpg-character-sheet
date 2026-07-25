@@ -20,22 +20,15 @@ function updatePoolDisplays() {
     let val = character[key] || 0;
     
     if (val > 0) {
-      // Положительная характеристика: тратит очки из пула
       totalSpentStats += (val * (val + 1)) / 2;
-      // Каждый накопленный плюс приближает к еще большему значению (тратит очки)
       totalSpentStats += (smallBonuses[key] || 0);
     } 
     else if (val < 0) {
-      // Отрицательная характеристика: ВОЗВРАЩАЕТ очки в пул ГМа (ценой дебаффа)
       let absVal = Math.abs(val);
       totalSpentStats -= (absVal * (absVal + 1)) / 2;
-      
-      // Малые плюсы в минусовой зоне двигают характеристику обратно к НУЛЮ.
-      // То есть они уменьшают штраф и "выкупают" её обратно (тратят очки пула)
       totalSpentStats += (smallBonuses[key] || 0);
     }
     else {
-      // Если характеристика равна 0, просто учитываем малые плюсы на ней (они тратят очки)
       totalSpentStats += (smallBonuses[key] || 0);
     }
   }
@@ -49,16 +42,12 @@ function updatePoolDisplays() {
     statLeftSpan.style.color = statsLeft < 0 ? "#ff5555" : (statsLeft === 0 ? "#aaa" : "#88ff88");
   }
 
-// --- 2. СЧИТАЕМ ПЛЮСЫ МАСТЕРСТВ ---
+  // --- 2. СЧИТАЕМ ПЛЮСЫ МАСТЕРСТВ ---
   let totalSpentSkills = 0;
   
   skills.forEach(skill => {
-    let val = skill.value || 1; // Текущий уровень (минимум 1)
-    
-    // Чистая стоимость уровня по формуле n*(n+1)/2
+    let val = skill.value || 1;
     totalSpentSkills += (val * (val + 1)) / 2;
-    
-    // Добавляем малые плюсы, которые влиты СВЕРХ текущего уровня
     totalSpentSkills += (skill.smallBonuses || 0);
   });
 
@@ -73,11 +62,11 @@ function updatePoolDisplays() {
 }
 
 function canAddStatBonus() {
-  return true; // Блокировка отключена, можно добавлять всегда
+  return true;
 }
 
 function canAddSkillBonus() {
-  return true; // Блокировка отключена, можно добавлять всегда
+  return true;
 }
 
 let smallBonuses = {
@@ -142,7 +131,7 @@ function addSmallBonus(statName) {
   updateDerivedStats();
   displayDerivedStats();
   updateSmallBonusDisplay();
-  updatePoolDisplays(); // Пул просто пересчитает цифру на экране
+  updatePoolDisplays();
 }
 
 function removeSmallBonus(stat) {
@@ -165,7 +154,7 @@ function removeSmallBonus(stat) {
   updateDerivedStats();
   displayDerivedStats();
   updateSmallBonusDisplay();
-  updatePoolDisplays(); // <-- ВОТ ЭТОТ ВЫЗОВ ОБЯЗАТЕЛЬНО НУЖЕН ЗДЕСЬ!
+  updatePoolDisplays();
 }
 
 let derived = {
@@ -185,10 +174,8 @@ function saveStats() {
       let newValue = Number(input.value) || 0;
       character[stat] = newValue;
 
-      // Корректный перерасчет порога с учетом знака характеристики
       let newNeed = newValue >= 0 ? (newValue + 1) : Math.abs(newValue);
 
-      // Если малые бонусы вылетели за пределы нового порога, сбрасываем их
       if ((smallBonuses[stat] || 0) >= newNeed) {
         smallBonuses[stat] = 0; 
       }
@@ -199,7 +186,7 @@ function saveStats() {
   updateDerivedStats();
   displayDerivedStats();
   updateSmallBonusDisplay();
-  updatePoolDisplays(); // Пересчитываем пул после ручного ввода
+  updatePoolDisplays();
 }
 
 function loadSmallBonuses() {
@@ -221,13 +208,11 @@ function updateDerivedStats() {
   let oldForcesMax = derived.forcesMax;
   let oldClockMax = derived.clockcycklesMax;
 
-  // Расчет максимумов по твоим формулам
   derived.healthMax = 9 + (Number(character["Мощь тела"]) || 0) * 3;
   derived.moving = 3 + (Number(character["Контроль движений"]) || 0);
   derived.clockcycklesMax = 3 + (Number(character["Скорость реакции"]) || 0);
   derived.forcesMax = 9 + (Number(character["Запас сил"]) || 0) * 3;
 
-  // Если это первая загрузка (текущие значения равны 0), приравниваем их к максимуму
   if (derived.healthCurrent === 0 && oldHealthMax === 0) derived.healthCurrent = derived.healthMax;
   if (derived.forcesCurrent === 0 && oldForcesMax === 0) derived.forcesCurrent = derived.forcesMax;
   if (derived.clockcycklesCurrent === 0 && oldClockMax === 0) derived.clockcycklesCurrent = derived.clockcycklesMax;
@@ -239,28 +224,18 @@ function updateSmallBonusDisplay() {
   for (let stat in character) {
     let current = smallBonuses[stat];
     let val = character[stat];
-    // Рассчитываем правильный порог для отображения в интерфейсе
     let need = val >= 0 ? (val + 1) : Math.abs(val);
     let inputId = statIds[stat];
 
-    // Если характеристика отрицательная, можно визуально подсказать, что мы копим "минусики" к нулю
-    // Но математически это те же самые аккуратные кнопочки
     html += `
       <div class="stat-row" style="display: flex; align-items: center; margin-bottom: 14px; gap: 10px;">
-        <!-- Название характеристики -->
         <span style="font-weight: bold; color: #fce1d4; flex: 1; font-size: 0.95em; min-width: 140px;">${stat}:</span>
-        
-        <!-- Поле ввода характеристики -->
         <input id="${inputId}" type="number" value="${character[stat]}" onchange="saveStats()"
                style="width: 45px; padding: 4px; text-align: center; border-radius: 4px; border: 1px solid #444; background-color: #222; color: #fff; height: 28px; box-sizing: border-box;">
-        
-        <!-- Аккуратный компактный блок малых плюсов/минусов -->
         <div class="small-bonus-block" style="display: flex; align-items: center; background: rgba(255, 255, 255, 0.08); padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1); gap: 4px;">
           <button onclick="removeSmallBonus('${stat}')" 
                   style="cursor: pointer; border: none; background: transparent; color: #fce1d4; font-size: 0.8em; padding: 2px 6px;">➖</button>
-          
           <span style="font-size: 0.85em; min-width: 30px; text-align: center; color: #bbb; font-family: monospace;">${current}/${need}</span>
-          
           <button onclick="addSmallBonus('${stat}')" 
                   style="cursor: pointer; border: none; background: transparent; color: #fce1d4; font-size: 0.8em; padding: 2px 6px;">➕</button>
         </div>
@@ -275,48 +250,44 @@ function updateSmallBonusDisplay() {
 }
 
 function getHealthColor(current, max) {
-  if (max <= 0) return "#fff"; // Защита от деления на ноль
+  if (max <= 0) return "#fff";
   
   let ratio = current / max;
   
   if (ratio <= 1/3) {
-    return "#ff5555"; // Ярко-красный для критического состояния (1/3 и меньше)
+    return "#ff5555";
   } else if (ratio <= 2/3) {
-    return "#FF8000"; // Оранжевый для ранений (между 1/3 и 2/3)
+    return "#FF8000";
   }
   
-  return "#ffffff"; // Белый, если здоровье в порядке (больше 2/3)
+  return "#ffffff";
 }
 
 function displayDerivedStats() {
   let container = document.getElementById("derivedStats");
   if (!container) return;
 
-  // Вычисляем цвет для текущего здоровья
   let hpColor = getHealthColor(derived.healthCurrent, derived.healthMax);
 
   container.innerHTML = `
-    <!-- Здоровье -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
       <span style="color: #fce1d4; font-weight: bold;">Здоровье:</span>
       <div style="display: flex; align-items: center; background: rgba(255, 255, 255, 0.08); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1); gap: 4px; min-width: 95px; justify-content: space-between; white-space: nowrap;">
         <button onclick="changeDerivedValue('health', -1)" style="cursor: pointer; border: none; background: transparent; color: #ff8888; font-size: 0.8em; padding: 2px 4px;">➖</button>
-        <!-- Меняем цвет здесь с помощью переменной hpColor -->
         <div style="display:flex; align-items:center; flex:1; justify-content:center; gap:2px;">
-  <input
-    type="number"
-    value="${derived.healthCurrent}"
-    min="0"
-    max="${derived.healthMax}"
-    onchange="setDerivedValue('health', this.value)"
-    style="width:42px; text-align:center; background:#222; color:${hpColor}; border:1px solid #444; border-radius:4px;">
-  <span style="color:#fff;">/${derived.healthMax}</span>
-</div>
+          <input
+            type="number"
+            value="${derived.healthCurrent}"
+            min="0"
+            max="${derived.healthMax}"
+            onchange="setDerivedValue('health', this.value)"
+            style="width:42px; text-align:center; background:#222; color:${hpColor}; border:1px solid #444; border-radius:4px;">
+          <span style="color:#fff;">/${derived.healthMax}</span>
+        </div>
         <button onclick="changeDerivedValue('health', 1)" style="cursor: pointer; border: none; background: transparent; color: #88ff88; font-size: 0.8em; padding: 2px 4px;">➕</button>
       </div>
     </div>
 
-<!-- Такты -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
       <span style="color: #fce1d4; font-weight: bold;">Такты:</span>
       <div style="display: flex; align-items: center; background: rgba(255, 255, 255, 0.08); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1); gap: 4px; min-width: 95px; justify-content: space-between; white-space: nowrap;">
@@ -335,7 +306,6 @@ function displayDerivedStats() {
       </div>
     </div>
 
-    <!-- Силы -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
       <span style="color: #fce1d4; font-weight: bold;">Силы:</span>
       <div style="display: flex; align-items: center; background: rgba(255, 255, 255, 0.08); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1); gap: 4px; min-width: 95px; justify-content: space-between; white-space: nowrap;">
@@ -354,10 +324,22 @@ function displayDerivedStats() {
       </div>
     </div>
 
-    <!-- Перемещение -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
       <span style="color: #fce1d4; font-weight: bold;">Перемещение:</span>
-      <b style="color: #fff; font-family: monospace; min-width: 95px; text-align: center; padding-right: 14px; box-sizing: border-box; font-size: 1em;">${derived.moving}</b>
+      
+        <span style="
+  color:#fff;
+  font-family: monospace;
+  font-weight:regular;
+  font-size:1.35em;
+  line-height:30px;
+  display:inline-block;
+  width:42px;
+  text-align:center;
+">
+  ${derived.moving}
+</span>
+      </div>
     </div>
   `;
 }
@@ -415,7 +397,7 @@ function addSkill() {
   localStorage.setItem("skills", JSON.stringify(skills));
 
   updateSkillList();
-  updatePoolDisplays(); // Добавь эту строчку, чтобы пул ГМа обновлялся при создании навыка!
+  updatePoolDisplays();
   
   document.getElementById("skillName").value = "";
   document.getElementById("skillValue").value = 0;
@@ -437,7 +419,7 @@ function addSkillSmallBonus(index) {
 
   localStorage.setItem("skills", JSON.stringify(skills));
   updateSkillList();
-  updatePoolDisplays(); // Пул просто пересчитает цифру на экране
+  updatePoolDisplays();
 }
 
 function removeSkillSmallBonus(skillIndex) {
@@ -446,20 +428,17 @@ function removeSkillSmallBonus(skillIndex) {
   if ((skill.smallBonuses || 0) > 0) {
     skill.smallBonuses--;
   } else {
-    // Если малых бонусов 0, уменьшаем сам уровень мастерства
     if (skill.value > 1) {
       skill.value--;
-      // Новый порог для малых бонусов равен текущему (уменьшенному) уровню + 1
       let needForNewLevel = skill.value + 1;
       skill.smallBonuses = needForNewLevel - 1;
     }
   }
 
-  // ВАЖНО: сохраняем именно мастерства, так как saveToLocalStorage их не трогает
   localStorage.setItem("skills", JSON.stringify(skills));
   
-  updateSkillList();     // Перерисовываем интерфейс мастерств
-  updatePoolDisplays(); // Пересчитываем пулы очков ГМа
+  updateSkillList();
+  updatePoolDisplays();
 }
 
 function deleteSkill(index) {
@@ -471,7 +450,6 @@ function deleteSkill(index) {
 function toggleGmPanel() {
   let panel = document.getElementById("gmPointBuyPanel");
   if (panel) {
-    // Если сейчас панель скрыта — показываем, если видна — скрываем
     if (panel.style.display === "none") {
       panel.style.display = "block";
     } else {
@@ -479,6 +457,7 @@ function toggleGmPanel() {
     }
   }
 }
+
 function changeSkill(index, amount) {
   skills[index].value += amount;
   if (skills[index].value < 1) {
@@ -491,20 +470,15 @@ function changeSkill(index, amount) {
 function updateSkillList() {
   let html = "";
   skills.forEach((skill, index) => {
-    // Гарантируем наличие свойства малых бонусов при отрисовке
     let current = skill.smallBonuses || 0;
     let val = skill.value;
     let need = val + 1;
 
     html += `
       <div class="skill-item" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; width: 100%; padding-right: 15px; box-sizing: border-box;">
-        <!-- Название мастерства слева -->
         <span style="color: #fff; font-size: 0.95em;"><b>${skill.name}</b> (${val >= 0 ? "+" : ""}${val})</span>
         
-        <!-- Блок управления справа -->
         <div class="skill-controls" style="display: flex; gap: 12px; align-items: center;">
-          
-          <!-- Компактный блок малых бонусов мастерства -->
           <div class="small-bonus-block" style="display: flex; align-items: center; background: rgba(255, 255, 255, 0.08); padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1); gap: 4px;">
             <button onclick="removeSkillSmallBonus(${index})" 
                     style="cursor: pointer; border: none; background: transparent; color: #fce1d4; font-size: 0.8em; padding: 2px 6px;">➖</button>
@@ -515,7 +489,6 @@ function updateSkillList() {
                     style="cursor: pointer; border: none; background: transparent; color: #fce1d4; font-size: 0.8em; padding: 2px 6px;">➕</button>
           </div>
 
-          <!-- Кнопка полного удаления мастерства -->
           <button onclick="deleteSkill(${index})" style="cursor: pointer; border: none; background: transparent; color: #ff8888; font-size: 0.9em; padding: 2px 4px;">❌</button>
         </div>
       </div>
@@ -545,7 +518,6 @@ function loadSkills() {
 function resetAllData() {
   if (confirm("Вы уверены, что хотите полностью стереть данные персонажа и сбросить лист?")) {
     localStorage.clear();
-    // Обходной путь для CodePen, который заменяет location.reload()
     window.location.href = window.location.href; 
   }
 }
@@ -590,135 +562,392 @@ function convertRoll(value, sides) {
   return value;
 }
 
+function toggleRiskUI() {
+  let isChecked = document.getElementById("useRiskSystem")?.checked;
+  let block = document.getElementById("riskAllocationBlock");
+  if (block) {
+    block.style.display = isChecked ? "block" : "none";
+  }
+  if (isChecked) {
+    updateRiskInputsDefaults();
+  }
+}
+
+function updateRiskInputsDefaults() {
+  let stat = document.getElementById("statSelect").value;
+  let statValue = (stat === "0") ? 0 : Math.abs(character[stat] || 0);
+
+  let skillName = document.getElementById("skillSelect").value;
+  let skillValue = 0;
+  if (skillName && skillName !== "none") {
+    let skill = skills.find(s => s.name == skillName);
+    if (skill) skillValue = Math.min(Math.abs(skill.value), statValue);
+  }
+
+  let d10Count = skillValue;
+  let d6Count = statValue - d10Count;
+
+  document.getElementById("d6Success").value = d6Count;
+  document.getElementById("d6Risk").value = 0;
+  document.getElementById("d10Success").value = d10Count;
+  document.getElementById("d10Risk").value = 0;
+}
+
+function validateRiskInputs() {
+  let stat = document.getElementById("statSelect").value;
+  let statValue = (stat === "0") ? 0 : Math.abs(character[stat] || 0);
+
+  let skillName = document.getElementById("skillSelect").value;
+  let skillValue = 0;
+  if (skillName && skillName !== "none") {
+    let skill = skills.find(s => s.name == skillName);
+    if (skill) skillValue = Math.min(Math.abs(skill.value), statValue);
+  }
+
+  let maxD10 = skillValue;
+  let maxD6 = statValue - maxD10;
+
+  let d6Succ = Number(document.getElementById("d6Success").value) || 0;
+  let d6Risk = Number(document.getElementById("d6Risk").value) || 0;
+  if (d6Succ + d6Risk > maxD6) {
+    document.getElementById("d6Risk").value = Math.max(0, maxD6 - d6Succ);
+  }
+
+  let d10Succ = Number(document.getElementById("d10Success").value) || 0;
+  let d10Risk = Number(document.getElementById("d10Risk").value) || 0;
+  if (d10Succ + d10Risk > maxD10) {
+    document.getElementById("d10Risk").value = Math.max(0, maxD10 - d10Succ);
+  }
+}
+
+document.getElementById("statSelect")?.addEventListener("change", () => {
+  if (document.getElementById("useRiskSystem")?.checked) updateRiskInputsDefaults();
+});
+document.getElementById("skillSelect")?.addEventListener("change", () => {
+  if (document.getElementById("useRiskSystem")?.checked) updateRiskInputsDefaults();
+});
+
+function updateRiskInputsDefaults() {
+  let stat = document.getElementById("statSelect").value;
+  let statValue = (stat === "0") ? 0 : Math.abs(character[stat] || 0);
+
+  let skillName = document.getElementById("skillSelect").value;
+  let skillValue = 0;
+  if (skillName && skillName !== "none") {
+    let skill = skills.find(s => s.name == skillName);
+    if (skill) skillValue = Math.min(Math.abs(skill.value), statValue);
+  }
+
+  let d10Max = skillValue;
+  let d6Max = statValue - d10Max;
+
+  // Устанавливаем дефолтные значения (все в Успех по умолчанию)
+  let d6SuccInput = document.getElementById("d6Success");
+  let d6RiskInput = document.getElementById("d6Risk");
+  let d10SuccInput = document.getElementById("d10Success");
+  let d10RiskInput = document.getElementById("d10Risk");
+
+  if (d6SuccInput) d6SuccInput.value = d6Max;
+  if (d6RiskInput) d6RiskInput.value = 0;
+  if (d10SuccInput) d10SuccInput.value = d10Max;
+  if (d10RiskInput) d10RiskInput.value = 0;
+
+  // Сбрасываем вложенные силы
+  let forcesRisk = document.getElementById("forcesRisk");
+  let forcesSuccess = document.getElementById("forcesSuccess");
+  if (forcesRisk) forcesRisk.value = 0;
+  if (forcesSuccess) forcesSuccess.value = 0;
+
+  validateRiskInputs();
+}
+
+function validateRiskInputs() {
+  let stat = document.getElementById("statSelect").value;
+  let statValue = (stat === "0") ? 0 : Math.abs(character[stat] || 0);
+
+  let skillName = document.getElementById("skillSelect").value;
+  let skillValue = 0;
+  if (skillName && skillName !== "none") {
+    let skill = skills.find(s => s.name == skillName);
+    if (skill) skillValue = Math.min(Math.abs(skill.value), statValue);
+    
+    let fRisk = Math.max(0, Number(document.getElementById("forcesRisk")?.value) || 0);
+let fSucc = Math.max(0, Number(document.getElementById("forcesSuccess")?.value) || 0);
+
+let totalForces = fRisk + fSucc;
+
+let extraDiceInput = document.getElementById("extraDice");
+
+if (extraDiceInput) {
+    extraDiceInput.value = totalForces;
+    extraDiceInput.readOnly = true;
+}
+  }
+
+  let maxD10 = skillValue;
+  let maxD6 = statValue - maxD10;
+
+  // ВАЛИДАЦИЯ D6
+  let d6RiskInput = document.getElementById("d6Risk");
+  let d6SuccInput = document.getElementById("d6Success");
+  
+  let d6Risk = Math.max(0, Number(d6RiskInput?.value) || 0);
+  if (d6Risk > maxD6) d6Risk = maxD6;
+  
+  let d6Succ = Math.max(0, Number(d6SuccInput?.value) || 0);
+  if (d6Risk + d6Succ > maxD6) {
+    d6Succ = maxD6 - d6Risk;
+  }
+  
+  if (d6RiskInput) d6RiskInput.value = d6Risk;
+  if (d6SuccInput) d6SuccInput.value = d6Succ;
+
+  // ВАЛИДАЦИЯ D10
+  let d10RiskInput = document.getElementById("d10Risk");
+  let d10SuccInput = document.getElementById("d10Success");
+
+  let d10Risk = Math.max(0, Number(d10RiskInput?.value) || 0);
+  if (d10Risk > maxD10) d10Risk = maxD10;
+
+  let d10Succ = Math.max(0, Number(d10SuccInput?.value) || 0);
+  if (d10Risk + d10Succ > maxD10) {
+    d10Succ = maxD10 - d10Risk;
+  }
+
+  if (d10RiskInput) d10RiskInput.value = d10Risk;
+  if (d10SuccInput) d10SuccInput.value = d10Succ;
+
+  // ВАЛИДАЦИЯ И АВТОРАСЧЕТ СИЛ
+  let fRisk = Math.max(0, Number(document.getElementById("forcesRisk")?.value) || 0);
+  let fSucc = Math.max(0, Number(document.getElementById("forcesSuccess")?.value) || 0);
+  
+  let totalForces = fRisk + fSucc;
+  let extraDiceInput = document.getElementById("extraDice");
+  if (extraDiceInput) {
+    extraDiceInput.value = totalForces;
+    extraDiceInput.readOnly = true; // Запрещаем ручной ввод
+  }
+}
+
+document.getElementById("statSelect")?.addEventListener("change", () => {
+  if (document.getElementById("useRiskSystem")?.checked) updateRiskInputsDefaults();
+});
+document.getElementById("skillSelect")?.addEventListener("change", () => {
+  if (document.getElementById("useRiskSystem")?.checked) updateRiskInputsDefaults();
+});
+
+document.getElementById("forcesRisk")?.addEventListener("input", validateRiskInputs);
+document.getElementById("forcesSuccess")?.addEventListener("input", validateRiskInputs);
+
+// Хелпер для превращения очков Сил в массив граней кубов
+function getForceDiceArray(forcesSpent) {
+  let dice = [];
+  let temp = forcesSpent;
+  while (temp >= 6) { dice.push(12); temp -= 6; }
+  if (temp === 2) dice.push(4);
+  else if (temp === 3) dice.push(6);
+  else if (temp === 4) dice.push(8);
+  else if (temp === 5) dice.push(10);
+  return dice;
+}
+
+function toggleRiskUI() {
+    let isChecked = document.getElementById("useRiskSystem").checked;
+
+    let block = document.getElementById("riskAllocationBlock");
+    block.style.display = isChecked ? "block" : "none";
+
+    let extraDice = document.getElementById("extraDice");
+
+    if (isChecked) {
+        updateRiskInputsDefaults();
+        extraDice.readOnly = true;
+    } else {
+        extraDice.readOnly = false;
+    }
+  
+  let normalBlock = document.getElementById("normalForcesBlock");
+
+if (normalBlock) {
+    normalBlock.style.display = isChecked ? "none" : "block";
+}
+}
+
 function rollDice() {
   let stat = document.getElementById("statSelect").value;
   let statValue = (stat === "0") ? 0 : (character[stat] || 0);
 
   let skillName = document.getElementById("skillSelect").value;
   let skillValue = 0;
-
   if (skillName && skillName !== "none") {
     let skill = skills.find(s => s.name == skillName);
-    if (skill) {
-      skillValue = skill.value;
+    if (skill) skillValue = skill.value;
+  }
+
+  let isRiskMode = document.getElementById("useRiskSystem")?.checked || false;
+
+  if (!isRiskMode) {
+    // --- ОБЫЧНЫЙ БРОСОК ---
+    let forcesSpent = Number(document.getElementById("extraDice").value) || 0;
+    if (derived.forcesCurrent < forcesSpent) {
+      alert(`Недостаточно Сил! Вложено: ${forcesSpent}, доступно: ${derived.forcesCurrent}`);
+      return;
     }
+
+    if (forcesSpent > 0) {
+      derived.forcesCurrent -= forcesSpent;
+      localStorage.setItem("derivedStatsState", JSON.stringify(derived));
+      displayDerivedStats();
+    }
+
+    let diceToRoll = getForceDiceArray(forcesSpent);
+    let statTotal = 0, skillTotal = 0, extraTotal = 0, total = 0;
+    let statOutput = "", skillOutput = "", extraOutput = "";
+
+    let statDice = Math.abs(statValue);
+    let skillDice = Math.min(Math.abs(skillValue), statDice);
+    let normalDice = statDice - skillDice;
+
+    for (let i = 0; i < normalDice; i++) {
+      let roll = Math.floor(Math.random() * 6) + 1;
+      let converted = convertRoll(roll, 6);
+      if (statValue >= 0) { statTotal += converted; total += converted; } 
+      else { statTotal -= converted; total -= converted; }
+      statOutput += `${roll} (${converted}) `;
+    }
+
+    for (let i = 0; i < skillDice; i++) {
+      let roll = Math.floor(Math.random() * 10) + 1;
+      let converted = convertRoll(roll, 10);
+      if (skillValue >= 0) { skillTotal += converted; total += converted; } 
+      else { skillTotal -= converted; total -= converted; }
+      skillOutput += `${roll} (${converted}) `;
+    }
+
+    diceToRoll.forEach(sides => {
+      let roll = Math.floor(Math.random() * sides) + 1;
+      let converted = convertRoll(roll, sides);
+      extraTotal += converted;
+      total += converted;
+      extraOutput += `d${sides}: ${roll} (${converted})<br>`;
+    });
+
+    document.getElementById("result").innerHTML = `
+      <b>Характеристика:</b> ${stat === "0" ? "Без модификатора" : stat} (${statValue >= 0 ? "+" : ""}${statValue})<br><br>
+      Обычные кубы (d6):<br>${statOutput || "нет"}<br>
+      Сумма характеристики: ${statTotal}<hr>
+      <b>Мастерство:</b> ${skillName == "none" ? "нет" : skillName}<br><br>
+      Усиленные кубы (d10):<br>${skillOutput || "нет"}<br>
+      Сумма мастерства: ${skillTotal}<hr>
+      <b>Вложено Сил:</b> ${forcesSpent}<br><br>
+      Кубы Сил:<br>${extraOutput.trim() || "нет"}<br>
+      Сумма Сил: ${extraTotal}<hr>
+      Итог: <b>${total}</b>
+    `;
+
+  } else {
+    // --- БРОСОК В РЕЖИМЕ РИСКА ---
+    validateRiskInputs();
+
+    let d6Risk = Number(document.getElementById("d6Risk").value) || 0;
+    let d6Succ = Number(document.getElementById("d6Success").value) || 0;
+    let d10Risk = Number(document.getElementById("d10Risk").value) || 0;
+    let d10Succ = Number(document.getElementById("d10Success").value) || 0;
+
+    let forcesRisk = Number(document.getElementById("forcesRisk").value) || 0;
+    let forcesSucc = Number(document.getElementById("forcesSuccess").value) || 0;
+    let totalForcesSpent = forcesRisk + forcesSucc;
+
+    if (derived.forcesCurrent < totalForcesSpent) {
+      alert(`Недостаточно Сил! Вложено: ${totalForcesSpent}, доступно: ${derived.forcesCurrent}`);
+      return;
+    }
+
+    if (totalForcesSpent > 0) {
+      derived.forcesCurrent -= totalForcesSpent;
+      localStorage.setItem("derivedStatsState", JSON.stringify(derived));
+      displayDerivedStats();
+    }
+
+    let riskSuccTotal = 0, riskDamageTotal = 0;
+    let riskLogs = [], succLogs = [];
+
+    // --- 1. КУБЫ РИСКА (Сначала Риск) ---
+    for (let i = 0; i < d6Risk; i++) {
+      let r = Math.floor(Math.random() * 6) + 1;
+      let c = convertRoll(r, 6);
+      riskDamageTotal += c;
+      riskLogs.push(`d6: ${r} (${c})`);
+    }
+    for (let i = 0; i < d10Risk; i++) {
+      let r = Math.floor(Math.random() * 10) + 1;
+      let c = convertRoll(r, 10);
+      riskDamageTotal += c;
+      riskLogs.push(`d10: ${r} (${c})`);
+    }
+    getForceDiceArray(forcesRisk).forEach(sides => {
+      let r = Math.floor(Math.random() * sides) + 1;
+      let c = convertRoll(r, sides);
+      riskDamageTotal += c;
+      riskLogs.push(`d${sides} (Сила): ${r} (${c})`);
+    });
+
+    // --- 2. КУБЫ УСПЕХА ---
+    for (let i = 0; i < d6Succ; i++) {
+      let r = Math.floor(Math.random() * 6) + 1;
+      let c = convertRoll(r, 6);
+      riskSuccTotal += c;
+      succLogs.push(`d6: ${r} (${c})`);
+    }
+    for (let i = 0; i < d10Succ; i++) {
+      let r = Math.floor(Math.random() * 10) + 1;
+      let c = convertRoll(r, 10);
+      riskSuccTotal += c;
+      succLogs.push(`d10: ${r} (${c})`);
+    }
+    getForceDiceArray(forcesSucc).forEach(sides => {
+      let r = Math.floor(Math.random() * sides) + 1;
+      let c = convertRoll(r, sides);
+      riskSuccTotal += c;
+      succLogs.push(`d${sides} (Сила): ${r} (${c})`);
+    });
+
+    // Вывод результатов (РИСК СНАЧАЛА, УСПЕХ ПОТОМ, БЕЛЫЙ/НЕЙТРАЛЬНЫЙ СТИЛЬ)
+    document.getElementById("result").innerHTML = `
+      <div style="font-weight:bold; color:#fce1d4; margin-bottom:12px;">Бросок: Риск и Успех</div>
+      <div style="display:flex; justify-content:space-between; gap:10px;">
+        <!-- Сначала РИСК -->
+        <div style="flex:1; background:rgba(255, 255, 255, 0.05); padding:10px; border-radius:6px; border:1px solid rgba(255, 255, 255, 0.2);">
+          <b style="color:#ffffff;">РИСК: ${riskDamageTotal}</b><br>
+          <div style="font-size:0.8em; color:#bbb; margin-top:6px; line-height: 1.4;">
+            ${riskLogs.join("<br>") || "нет кубов"}
+          </div>
+        </div>
+        <!-- Потом УСПЕХ -->
+        <div style="flex:1; background:rgba(255, 255, 255, 0.05); padding:10px; border-radius:6px; border:1px solid rgba(255, 255, 255, 0.2);">
+          <b style="color:#ffffff;">УСПЕХ: ${riskSuccTotal}</b><br>
+          <div style="font-size:0.8em; color:#bbb; margin-top:6px; line-height: 1.4;">
+            ${succLogs.join("<br>") || "нет кубов"}
+          </div>
+        </div>
+      </div>
+    `;
   }
-
-  // --- НОВАЯ ДИНАМИЧЕСКАЯ СИСТЕМА СИЛ ---
-  // Считываем число из твоего текущего инпута extraDice
-  let forcesSpent = Number(document.getElementById("extraDice").value) || 0;
-
-  // Проверка на лимит: смотрим на текущие доступные силы
-  if (derived.forcesCurrent < forcesSpent) {
-    alert(`Недостаточно Сил! Вложено: ${forcesSpent}, доступно: ${derived.forcesCurrent}`);
-    return;
-  }
-
-  // АВТОМАТИЧЕСКОЕ ВЫЧИТАНИЕ СИЛ
-  if (forcesSpent > 0) {
-    derived.forcesCurrent -= forcesSpent; // Списываем потраченные силы
-    localStorage.setItem("derivedStatsState", JSON.stringify(derived)); // Сохраняем новое значение в память
-    displayDerivedStats(); // Перерисовываем блок производных характеристик с новыми цифрами
-  }
-
-  // Массив, куда мы запишем все грани кубов, которые нужно бросить
-  let diceToRoll = [];
-
-  // Временная переменная для расчета остатка сил
-  let tempForces = forcesSpent;
-
-  // 1. Считаем, сколько полных кубов d12 (по 6 сил) помещается в трату
-  while (tempForces >= 6) {
-    diceToRoll.push(12);
-    tempForces -= 6;
-  }
-
-  // 2. Смотрим на остаток сил и добавляем хвостик по твоей таблице
-  if (tempForces === 2) diceToRoll.push(4);
-  else if (tempForces === 3) diceToRoll.push(6);
-  else if (tempForces === 4) diceToRoll.push(8);
-  else if (tempForces === 5) diceToRoll.push(10);
-  // Если осталась 1 сила, она сгорает/не дает куба по схеме (так как старт с 2 сил)
-
-  let statTotal = 0;
-  let skillTotal = 0;
-  let extraTotal = 0;
-  let total = 0;
-
-  let statOutput = "";
-  let skillOutput = "";
-  let extraOutput = "";
-
-  let statDice = Math.abs(statValue);
-  let skillDice = Math.min(Math.abs(skillValue), statDice);
-  let normalDice = statDice - skillDice;
-
-  // Бросок обычных кубов характеристики (d6)
-  for (let i = 0; i < normalDice; i++) {
-    let roll = Math.floor(Math.random() * 6) + 1;
-    let converted = convertRoll(roll, 6);
-    if (statValue >= 0) { statTotal += converted; total += converted; } 
-    else { statTotal -= converted; total -= converted; }
-    statOutput += `${roll} (${converted}) `;
-  }
-
-  // Бросок усиленных кубов мастерства (d10)
-  for (let i = 0; i < skillDice; i++) {
-    let roll = Math.floor(Math.random() * 10) + 1;
-    let converted = convertRoll(roll, 10);
-    if (skillValue >= 0) { skillTotal += converted; total += converted; } 
-    else { skillTotal -= converted; total -= converted; }
-    skillOutput += `${roll} (${converted}) `;
-  }
-
-  // 3. Динамический бросок кубов за Силы на основе сгенерированного массива
-  diceToRoll.forEach(sides => {
-    let roll = Math.floor(Math.random() * sides) + 1;
-    let converted = convertRoll(roll, sides); // Твоя функция уже умеет обрабатывать и d12!
-    extraTotal += converted;
-    total += converted;
-    extraOutput += `d${sides}: ${roll} (${converted})<br>`;
-  });
-
-// Вывод результата броска на экран
-  document.getElementById("result").innerHTML = `
-    <b>Характеристика:</b> ${stat === "0" ? "Без модификатора" : stat} (${statValue >= 0 ? "+" : ""}${statValue})
-    <br><br>
-    Обычные кубы характеристики (d6):<br>${statOutput || "нет"}<br>
-    Сумма характеристики: ${statTotal}
-    <hr>
-    <b>Мастерство:</b> ${skillName == "none" ? "нет" : skillName} ${skillName == "none" ? "" : `(${skillValue >= 0 ? "+" : ""}${skillValue})`}
-    <br><br>
-    Усиленные кубы характеристики (d10):<br>${skillOutput || "нет"}<br>
-    Сумма мастерства: ${skillTotal}
-    <hr>
-    <b>Вложено Сил:</b> ${forcesSpent}
-    <br><br>
-    Результат броска Сил (d${forcesSpent === 0 ? "0" : diceToRoll.join("/d")}):<br>
-    ${extraOutput.trim() || "нет кубов"}<br>
-    Сумма кубов Сил: ${extraTotal}
-    <hr>
-    🎲 Итог: <b>${total}</b>
-  `;
-  
 }
 
+// --- ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ ---
 window.addEventListener("DOMContentLoaded", () => {
+  // 1. Загружаем сохраненные данные из памяти
   loadCharacter();
   loadSmallBonuses();
   loadSkills();
-  
-  // Добавляем загрузку текущих динамических хитов/сил
-  let savedDerived = localStorage.getItem("derivedStatsState");
-  if (savedDerived) {
-    let parsed = JSON.parse(savedDerived);
-    derived.healthCurrent = parsed.healthCurrent || 0;
-    derived.clockcycklesCurrent = parsed.clockcycklesCurrent || 0;
-    derived.forcesCurrent = parsed.forcesCurrent || 0;
-  }
-  
-  syncInputsWithCharacter();
+
+  // 2. Рассчитываем производные параметры
   updateDerivedStats();
-  displayDerivedStats();
-  updateSmallBonusDisplay();
+
+  // 3. Отрисовываем всё в HTML
+  updateSmallBonusDisplay(); // Выводит список основных характеристик
+  displayDerivedStats();     // Выводит Здоровье, Такты, Силы и Перемещение
+  updateSkillList();         // Выводит список мастерств
+  updatePoolDisplays();      // Обновляет пулы очков ГМа
 });
