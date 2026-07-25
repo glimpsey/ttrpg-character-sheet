@@ -593,33 +593,6 @@ function updateRiskInputsDefaults() {
   document.getElementById("d10Risk").value = 0;
 }
 
-function validateRiskInputs() {
-  let stat = document.getElementById("statSelect").value;
-  let statValue = (stat === "0") ? 0 : Math.abs(character[stat] || 0);
-
-  let skillName = document.getElementById("skillSelect").value;
-  let skillValue = 0;
-  if (skillName && skillName !== "none") {
-    let skill = skills.find(s => s.name == skillName);
-    if (skill) skillValue = Math.min(Math.abs(skill.value), statValue);
-  }
-
-  let maxD10 = skillValue;
-  let maxD6 = statValue - maxD10;
-
-  let d6Succ = Number(document.getElementById("d6Success").value) || 0;
-  let d6Risk = Number(document.getElementById("d6Risk").value) || 0;
-  if (d6Succ + d6Risk > maxD6) {
-    document.getElementById("d6Risk").value = Math.max(0, maxD6 - d6Succ);
-  }
-
-  let d10Succ = Number(document.getElementById("d10Success").value) || 0;
-  let d10Risk = Number(document.getElementById("d10Risk").value) || 0;
-  if (d10Succ + d10Risk > maxD10) {
-    document.getElementById("d10Risk").value = Math.max(0, maxD10 - d10Succ);
-  }
-}
-
 document.getElementById("statSelect")?.addEventListener("change", () => {
   if (document.getElementById("useRiskSystem")?.checked) updateRiskInputsDefaults();
 });
@@ -670,54 +643,38 @@ function validateRiskInputs() {
   if (skillName && skillName !== "none") {
     let skill = skills.find(s => s.name == skillName);
     if (skill) skillValue = Math.min(Math.abs(skill.value), statValue);
-    
-    let fRisk = Math.max(0, Number(document.getElementById("forcesRisk")?.value) || 0);
-let fSucc = Math.max(0, Number(document.getElementById("forcesSuccess")?.value) || 0);
-
-let totalForces = fRisk + fSucc;
-
-let extraDiceInput = document.getElementById("extraDice");
-
-if (extraDiceInput) {
-    extraDiceInput.value = totalForces;
-    extraDiceInput.readOnly = true;
-}
   }
 
   let maxD10 = skillValue;
   let maxD6 = statValue - maxD10;
 
-  // ВАЛИДАЦИЯ D6
+  // --- ВАЛИДАЦИЯ И АВТОРАСЧЕТ D6 ---
   let d6RiskInput = document.getElementById("d6Risk");
   let d6SuccInput = document.getElementById("d6Success");
-  
+
   let d6Risk = Math.max(0, Number(d6RiskInput?.value) || 0);
   if (d6Risk > maxD6) d6Risk = maxD6;
   
-  let d6Succ = Math.max(0, Number(d6SuccInput?.value) || 0);
-  if (d6Risk + d6Succ > maxD6) {
-    d6Succ = maxD6 - d6Risk;
-  }
-  
+  // Успех всегда дополняет Риск до максимума D6
+  let d6Succ = maxD6 - d6Risk;
+
   if (d6RiskInput) d6RiskInput.value = d6Risk;
   if (d6SuccInput) d6SuccInput.value = d6Succ;
 
-  // ВАЛИДАЦИЯ D10
+  // --- ВАЛИДАЦИЯ И АВТОРАСЧЕТ D10 ---
   let d10RiskInput = document.getElementById("d10Risk");
   let d10SuccInput = document.getElementById("d10Success");
 
   let d10Risk = Math.max(0, Number(d10RiskInput?.value) || 0);
   if (d10Risk > maxD10) d10Risk = maxD10;
 
-  let d10Succ = Math.max(0, Number(d10SuccInput?.value) || 0);
-  if (d10Risk + d10Succ > maxD10) {
-    d10Succ = maxD10 - d10Risk;
-  }
+  // Успех всегда дополняет Риск до максимума D10
+  let d10Succ = maxD10 - d10Risk;
 
   if (d10RiskInput) d10RiskInput.value = d10Risk;
   if (d10SuccInput) d10SuccInput.value = d10Succ;
 
-  // ВАЛИДАЦИЯ И АВТОРАСЧЕТ СИЛ
+  // --- ВАЛИДАЦИЯ И АВТОРАСЧЕТ СИЛ ---
   let fRisk = Math.max(0, Number(document.getElementById("forcesRisk")?.value) || 0);
   let fSucc = Math.max(0, Number(document.getElementById("forcesSuccess")?.value) || 0);
   
