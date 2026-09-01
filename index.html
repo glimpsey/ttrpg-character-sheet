@@ -148,12 +148,50 @@
     <div id="normalForcesBlock" style="margin-top:10px; margin-bottom:12px;">
   <h3 style="margin-bottom:6px;">Силы</h3>
 
-  <input
-    id="extraDice"
-    type="number"
-    value="0"
-    min="0"
-    style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #444; background:#222; color:#fff; box-sizing:border-box;">
+  <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.08); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+
+    <span style="color:#fce1d4; font-weight:bold;">
+      Потратить Сил:
+    </span>
+
+    <div style="display:flex; align-items:center; gap:8px;">
+
+      <button
+        onclick="changeForceDice(-1)"
+        style="cursor:pointer; border:none; background:transparent; color:#aa88ff; font-size:1.2em; padding:2px 6px;">
+        ➖
+      </button>
+
+      <div style="display:flex; align-items:center; gap:4px;">
+
+        <input
+          id="extraDice"
+          type="number"
+          value="0"
+          min="0"
+          readonly
+          style="width:45px; padding:5px; text-align:center; border-radius:5px; border:1px solid #444; background:#222; color:#fff; box-sizing:border-box;">
+
+        <span style="color:#fff;">
+          /<span id="forceCost">0</span>
+        </span>
+
+      </div>
+
+      <button
+        onclick="changeForceDice(1)"
+        style="cursor:pointer; border:none; background:transparent; color:#aa88ff; font-size:1.2em; padding:2px 6px;">
+        ➕
+      </button>
+
+    </div>
+
+  </div>
+
+  <div style="margin-top:6px; color:#aaa; font-size:0.85em; text-align:right;">
+    <span id="forceDiceInfo">0d6</span>
+  </div>
+
 </div>
 
     <button onclick="rollDice()">Roll dice</button>
